@@ -15,7 +15,7 @@ const POSTS_QUERY = `*[_type == "post" && references(*[_type == "category" && ti
 }`;
 
 export default async function CategoryPage() {
-    const posts = await client.fetch(POSTS_QUERY);
+    const posts = await client.fetch(POSTS_QUERY, {}, { cache: "no-store" });
 
     return (
         <main className="max-w-7xl mx-auto px-4 py-8">
