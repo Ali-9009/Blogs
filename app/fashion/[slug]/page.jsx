@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
+import PortableTextComponent from "@/components/PortableText";
 
 const POST_QUERY = `*[_type == "post" && slug.current == $slug][0]{
   _id,
@@ -28,10 +29,10 @@ export default async function BlogDetailPage({ params }) {
         <main className="max-w-7xl mx-auto px-4 py-8">
             {blog.mainImage && (
                 <Image
-                    src={urlFor(blog.mainImage).width(1000).height(500).url()}
+                    src={urlFor(blog.mainImage).width(2400).quality(90).url()}
                     alt={blog.title}
-                    width={1000}
-                    height={500}
+                    width={2400}
+                    height={1200}
                     className="w-full h-auto rounded-lg"
                 />
             )}
@@ -55,15 +56,12 @@ export default async function BlogDetailPage({ params }) {
                     </div>
 
                     <div className="prose max-w-none mt-4">
-                        {blog.body?.map((block) => (
-                            <p key={block._key}>
-                                {block.children?.map((child) => child.text).join("")}
-                            </p>
-                        ))}
+                        <PortableTextComponent value={blog.body} />
                     </div>
                 </article>
 
-                <Sidebar />
+                    <Sidebar />
+
             </div>
         </main>
     );

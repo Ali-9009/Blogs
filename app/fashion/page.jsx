@@ -4,17 +4,24 @@ import Sidebar from "@/components/Sidebar";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 
-const POSTS_QUERY = `*[_type == "post" && references(*[_type == "category" && title == "Fashion"]._id)] | order(_createdAt desc) {
+const POSTS_QUERY = `*[
+  _type == "post" &&
+  references(*[_type == "category" && slug.current == "fashion"]._id)
+] | order(_createdAt desc) {
   _id,
   title,
   slug,
   excerpt,
   mainImage,
-  author->{name}
+  author->{name},
+  categories[]->{
+    title,
+    slug
+  }
 }`;
 
 export default async function CategoryPage() {
-     const posts = await client.fetch(POSTS_QUERY, {}, { cache: "no-store" });
+    const posts = await client.fetch(POSTS_QUERY, {}, { cache: "no-store" });
 
     return (
         <main className="max-w-7xl mx-auto px-4 py-8">
@@ -25,7 +32,7 @@ export default async function CategoryPage() {
                         <span className="text-blue-700"> Fashion</span>
                     </h1>
 
-                    <div className="grid md:grid-cols-2 gap-x-8 gap-y-10">
+                    <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
                         {posts.map((blog) => (
                             <article key={blog._id}>
                                 <Link href={`/fashion/${blog.slug.current}`}>
@@ -42,9 +49,9 @@ export default async function CategoryPage() {
 
                                 <Link
                                     href={`/fashion/${blog.slug.current}`}
-                                    className="inline-block bg-white px-6 -mt-4 relative z-10 text-xs text-blue-600"
+                                    className="inline-block bg-blue-700 relative z-10 text-sm font-medium text-white p-1 mt-2"
                                 >
-                                    Fashion
+                                    {blog.categories?.[0]?.title}
                                 </Link>
 
                                 <Link href={`/fashion/${blog.slug.current}`}>
@@ -63,9 +70,9 @@ export default async function CategoryPage() {
 
                                 <Link
                                     href={`/fashion/${blog.slug.current}`}
-                                    className="inline-block mt-5 bg-blue-600 text-white text-xs font-bold px-5 py-2 uppercase"
+                                    className="inline-block bg-blue-600 text-white text-xs font-bold px-5 py-2 uppercase"
                                 >
-                                    Read the Article ›
+                                    Read the Article
                                 </Link>
                             </article>
                         ))}

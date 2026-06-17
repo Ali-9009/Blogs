@@ -1,30 +1,46 @@
 import Sidebar from "@/components/Sidebar";
-import { blogs } from "@/data/blogs";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { client } from "@/sanity/lib/client";
+import { urlFor } from "@/sanity/lib/image";
+import PortableTextComponent from "@/components/PortableText";
+
+const POST_QUERY = `*[_type == "post" && slug.current == $slug][0]{
+  _id,
+  title,
+  slug,
+  excerpt,
+  mainImage,
+  body,
+  author->{name},
+  categories[]->{
+    title
+  }
+}`;
 
 export default async function BlogDetailPage({ params }) {
     const { slug } = await params;
 
-    const blog = blogs.find((item) => item.slug === slug);
+    const blog = await client.fetch(POST_QUERY, { slug });
 
     if (!blog) notFound();
 
     return (
         <main className="max-w-7xl mx-auto px-4 py-8">
-            <Image
-                src={blog.image}
-                alt={blog.title}
-                width={1200}
-                height={700}
-                className="w-full h-auto rounded-lg"
-            />
+            {blog.mainImage && (
+                <Image
+                    src={urlFor(blog.mainImage).width(2400).quality(90).url()}
+                    alt={blog.title}
+                    width={2400}
+                    height={1200}
+                    className="w-full h-auto rounded-lg"
+                />
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 md:mt-10 mt-6">
                 <article>
-                    
-
                     <span className="text-sm text-blue-600 uppercase">
-                        {blog.category}
+                        {blog.categories?.[0]?.title || "Healthy Living"}
                     </span>
 
                     <h1 className="text-3xl font-bold mt-3">
@@ -32,18 +48,20 @@ export default async function BlogDetailPage({ params }) {
                     </h1>
 
                     <p className="text-gray-500 mt-3">
-                        By {blog.author} · {blog.date}
+                        By {blog.author?.name || "Admin"}
                     </p>
 
                     <div className="prose max-w-none mt-8">
                         <p>{blog.excerpt}</p>
                     </div>
+
                     <div className="prose max-w-none mt-4">
-                        <p>{blog.content}</p>
+                        <PortableTextComponent value={blog.body} />
                     </div>
                 </article>
 
                 <Sidebar />
+
             </div>
         </main>
     );

@@ -6,7 +6,7 @@ import { urlFor } from "@/sanity/lib/image";
 
 const POSTS_QUERY = `*[
   _type == "post" &&
-  references(*[_type == "category" && slug.current == "tech"]._id)
+  references(*[_type == "category" && slug.current == "healthy-living"]._id)
 ] | order(_createdAt desc) {
   _id,
   title,
@@ -30,13 +30,13 @@ export default async function CategoryPage() {
                 <section>
                     <h1 className="text-center text-xl font-bold uppercase mb-8">
                         Category:
-                        <span className="text-blue-700"> Tech</span>
+                        <span className="text-blue-700"> Healthy Living</span>
                     </h1>
 
                     <div className="grid md:grid-cols-2 gap-x-8 gap-y-10">
                         {posts.map((blog) => (
                             <article key={blog._id}>
-                                <Link href={`/tech/${blog.slug.current}`}>
+                                <Link href={`/healthy-living/${blog.slug.current}`}>
                                     {blog.mainImage && (
                                         <Image
                                             src={urlFor(blog.mainImage).width(600).height(400).url()}
@@ -49,13 +49,13 @@ export default async function CategoryPage() {
                                 </Link>
 
                                 <Link
-                                    href={`/tech/${blog.slug.current}`}
+                                    href={`/healthy-living/${blog.slug.current}`}
                                     className="inline-block bg-blue-700 relative z-10 text-sm font-medium text-white p-1 mt-2"
                                 >
-                                    {blog.categories?.[0]?.title || "Tech"}
+                                    {blog.categories?.[0]?.title || "Healthy Living"}
                                 </Link>
 
-                                <Link href={`/tech/${blog.slug.current}`}>
+                                <Link href={`/healthy-living/${blog.slug.current}`}>
                                     <h2 className="mt-3 text-base font-bold uppercase leading-tight hover:text-blue-600">
                                         {blog.title}
                                     </h2>
@@ -70,7 +70,7 @@ export default async function CategoryPage() {
                                 </p>
 
                                 <Link
-                                    href={`/tech/${blog.slug.current}`}
+                                    href={`/healthy-living/${blog.slug.current}`}
                                     className="inline-block bg-blue-600 text-white text-xs font-bold px-5 py-2 uppercase"
                                 >
                                     Read the Article

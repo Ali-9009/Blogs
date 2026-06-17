@@ -4,14 +4,21 @@ import Sidebar from "@/components/Sidebar";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 
-const POSTS_QUERY = `*[_type == "post" && references(*[_type == "category" && title == "Culture"]._id)] | order(_createdAt desc) {
+const POSTS_QUERY = `*[
+  _type == "post" &&
+  references(*[_type == "category" && slug.current == "culture"]._id)
+] | order(_createdAt desc) {
   _id,
   title,
   slug,
   excerpt,
   mainImage,
   author->{name},
-  publishedAt
+  publishedAt,
+  categories[]->{
+    title,
+    slug
+  }
 }`;
 
 export default async function CategoryPage() {
@@ -32,20 +39,20 @@ export default async function CategoryPage() {
                                 <Link href={`/culture/${blog.slug.current}`}>
                                     {blog.mainImage && (
                                         <Image
-                                            src={urlFor(blog.mainImage).width(400).height(400).url()}
+                                            src={urlFor(blog.mainImage).width(600).height(400).url()}
                                             alt={blog.title}
-                                            width={400}
+                                            width={600}
                                             height={400}
-                                            className="object-cover"
+                                            className="w-full h-64 object-cover"
                                         />
                                     )}
                                 </Link>
 
                                 <Link
                                     href={`/culture/${blog.slug.current}`}
-                                    className="inline-block bg-white px-6 -mt-4 relative z-10 text-xs text-blue-600"
+                                    className="inline-block bg-blue-700 relative z-10 text-sm font-medium text-white p-1 mt-2"
                                 >
-                                    Culture
+                                    {blog.categories?.[0]?.title || "Culture"}
                                 </Link>
 
                                 <Link href={`/culture/${blog.slug.current}`}>
@@ -64,9 +71,9 @@ export default async function CategoryPage() {
 
                                 <Link
                                     href={`/culture/${blog.slug.current}`}
-                                    className="inline-block mt-5 bg-blue-600 text-white text-xs font-bold px-5 py-2 uppercase"
+                                    className="inline-block bg-blue-600 text-white text-xs font-bold px-5 py-2 uppercase"
                                 >
-                                    Read the Article ›
+                                    Read the Article
                                 </Link>
                             </article>
                         ))}
