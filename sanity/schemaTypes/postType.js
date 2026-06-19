@@ -46,6 +46,27 @@ export const postType = defineType({
       name: 'publishedAt',
       type: 'datetime',
     }),
+
+    defineField({
+      name: 'metaTitle',
+      title: 'Meta Title',
+      type: 'string',
+    }),
+
+    defineField({
+      name: 'metaDescription',
+      title: 'Meta Description',
+      type: 'text',
+      rows: 3,
+    }),
+
+    defineField({
+      name: 'keywords',
+      title: 'Keywords',
+      type: 'array',
+      of: [defineArrayMember({ type: 'string' })],
+    }),
+
     defineField({
       name: 'body',
       type: 'blockContent',

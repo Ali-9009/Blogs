@@ -12,16 +12,56 @@ const POST_QUERY = `*[_type == "post" && slug.current == $slug][0]{
   excerpt,
   mainImage,
   body,
+  metaTitle,
+  metaDescription,
+  keywords,
   author->{name},
   categories[]->{
     title
   }
 }`;
 
+export async function generateMetadata({ params }) {
+    const { slug } = await params;
+
+    const blog = await client.fetch(
+        `*[_type == "post" && slug.current == $slug][0]{
+      title,
+      excerpt,
+      metaTitle,
+      metaDescription,
+      keywords,
+      mainImage
+    }`,
+        { slug },
+        { cache: "no-store" }
+    );
+
+    if (!blog) {
+        return {
+            title: "Post not found",
+        };
+    }
+
+    return {
+        title: blog.metaTitle || blog.title,
+        description: blog.metaDescription || blog.excerpt,
+        keywords: blog.keywords || [],
+        openGraph: {
+            title: blog.metaTitle || blog.title,
+            description: blog.metaDescription || blog.excerpt,
+            images: blog.mainImage
+                ? [urlFor(blog.mainImage).width(1200).height(630).url()]
+                : [],
+        },
+    };
+}
+
+
 export default async function BlogDetailPage({ params }) {
     const { slug } = await params;
 
-    const blog = await client.fetch(POST_QUERY, { slug });
+    const blog = await client.fetch(POST_QUERY, { slug }, { cache: "no-store" });
 
     if (!blog) notFound();
 
@@ -54,6 +94,19 @@ export default async function BlogDetailPage({ params }) {
                     <div className="prose max-w-none mt-8">
                         <p>{blog.excerpt}</p>
                     </div>
+
+                    {/* {blog.keywords?.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                            {blog.keywords.map((keyword) => (
+                                <span
+                                    key={keyword}
+                                    className="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-700"
+                                >
+                                    #{keyword}
+                                </span>
+                            ))}
+                        </div>
+                    )} */}
 
                     <div className="prose max-w-none mt-4">
                         <PortableTextComponent value={blog.body} />
