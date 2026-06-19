@@ -23,7 +23,8 @@ const POSTS_QUERY = `*[
 
 const CATEGORY_QUERY = `*[_type == "category" && slug.current == $category][0]{
   title,
-  slug
+  slug,
+  bannerImage
 }`;
 
 export default async function CategoryPage({ params }) {
@@ -45,14 +46,37 @@ export default async function CategoryPage({ params }) {
 
     return (
         <main className="max-w-7xl mx-auto px-4 py-8">
+            <div className="relative mb-8">
+                {categoryData.bannerImage && (
+                    <Image
+                        src={urlFor(categoryData.bannerImage)
+                            .width(1600)
+                            .height(500)
+                            .url()}
+                        alt={categoryData.title}
+                        width={1600}
+                        height={500}
+                        className="w-full h-75 md:h-112 object-cover rounded-lg"
+                    />
+                )}
+
+                {/* Dark Overlay */}
+                <div className="absolute inset-0 bg-black/40 rounded-lg" />
+
+                {/* Text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                    <p className="text-white/80 uppercase tracking-widest text-sm mb-2">
+                        Category
+                    </p>
+
+                    <h1 className="text-white text-3xl md:text-5xl font-bold uppercase">
+                        {categoryData.title}
+                    </h1>
+                </div>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
                 <section>
-                    <h1 className="text-center text-xl font-bold uppercase mb-8">
-                        Category:
-                        <span className="text-blue-700"> {categoryData.title}</span>
-                    </h1>
-
-                    <div className="grid md:grid-cols-2 gap-x-8 gap-y-10">
+                  <div className="grid md:grid-cols-2 gap-x-8 gap-y-10">
                         {posts.map((blog) => (
                             <article key={blog._id}>
                                 <Link href={`/${category}/${blog.slug.current}`}>
