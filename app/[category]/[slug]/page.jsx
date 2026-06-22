@@ -66,8 +66,8 @@ export default async function BlogDetailPage({ params }) {
     if (!blog) notFound();
 
     return (
-        <main className="max-w-7xl mx-auto px-4 py-8">
-            {blog.mainImage && (
+        <main className="max-w-7xl mx-auto px-4 pb-8">
+            {/* {blog.mainImage && (
                 <Image
                     src={urlFor(blog.mainImage).width(2400).quality(90).url()}
                     alt={blog.title}
@@ -75,7 +75,7 @@ export default async function BlogDetailPage({ params }) {
                     height={1200}
                     className="w-full h-auto rounded-lg"
                 />
-            )}
+            )} */}
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 md:mt-10 mt-6">
                 <article>
