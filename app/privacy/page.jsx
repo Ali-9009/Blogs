@@ -78,7 +78,7 @@ export default function PrivacyPolicy() {
                 </section>
 
                 {/* CONTACT */}
-                <section className="mt-8">
+                <section className="mt-6">
                     <h2 className="text-xl font-semibold">
                         5. Contact Us
                     </h2>
