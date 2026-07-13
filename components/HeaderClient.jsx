@@ -1,206 +1,485 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, ChevronDown } from "lucide-react";
+import {
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    Home,
+    Search,
+    X,
+} from "lucide-react";
 import { urlFor } from "@/sanity/lib/image";
 
-export default function HeaderClient({ navItems }) {
-    const [open, setOpen] = useState(false);
-    const [sticky, setSticky] = useState(false);
+export default function HeaderClient({ navItems = [] }) {
+    const router = useRouter();
+
+    const [collapsed, setCollapsed] = useState(false);
+    const [activeCategory, setActiveCategory] = useState(null);
+
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchValue, setSearchValue] = useState("");
+
+    const [currentDate, setCurrentDate] = useState({
+        gregorian: "",
+        islamic: "",
+    });
+
+    const navRef = useRef(null);
+    const lastScrollY = useRef(0);
 
     useEffect(() => {
-        const onScroll = () => setSticky(window.scrollY > 40);
-        onScroll();
+        const today = new Date();
 
-        window.addEventListener("scroll", onScroll);
-        return () => window.removeEventListener("scroll", onScroll);
+        const gregorian = new Intl.DateTimeFormat("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        }).format(today);
+
+        let islamic = "";
+
+        try {
+            islamic = new Intl.DateTimeFormat(
+                "en-US-u-ca-islamic-umalqura",
+                {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                }
+            ).format(today);
+        } catch {
+            islamic = "";
+        }
+
+        setCurrentDate({
+            gregorian,
+            islamic,
+        });
     }, []);
 
-    const leftItems = navItems.slice(0, 3);
-    const rightItems = navItems.slice(3, 6);
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
 
-    const closeAllMenus = () => {
-        setOpen(false);
-    };
+            setCollapsed(currentScrollY > 55);
+            lastScrollY.current = currentScrollY;
+        };
+
+        handleScroll();
+
+        window.addEventListener("scroll", handleScroll, {
+            passive: true,
+        });
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+        };
+    }, []);
+
+    useEffect(() => {
+        const closeMegaMenu = (event) => {
+            if (!event.target.closest("[data-header-category]")) {
+                setActiveCategory(null);
+            }
+        };
+
+        document.addEventListener("click", closeMegaMenu);
+
+        return () => {
+            document.removeEventListener("click", closeMegaMenu);
+        };
+    }, []);
 
     const getCategoryUrl = (category) => {
-        return `/${category.slug.current}`;
+        const slug = category?.slug?.current;
+
+        return slug ? `/${slug}` : "#";
     };
 
     const getBlogUrl = (blog) => {
-        const categorySlug = blog.categories?.[0]?.slug?.current;
-        const postSlug = blog.slug?.current;
+        const categorySlug = blog?.categories?.[0]?.slug?.current;
+        const postSlug = blog?.slug?.current;
 
-        if (!categorySlug || !postSlug) return "#";
+        if (!categorySlug || !postSlug) {
+            return "#";
+        }
 
         return `/${categorySlug}/${postSlug}`;
     };
 
-    const formatDate = (date) => {
+    const formatPostDate = (date) => {
         if (!date) return "";
 
-        return new Date(date).toLocaleDateString("en-US", {
-            month: "long",
+        return new Intl.DateTimeFormat("en-US", {
+            month: "short",
             day: "numeric",
             year: "numeric",
+        }).format(new Date(date));
+    };
+
+    const scrollCategories = (direction) => {
+        if (!navRef.current) return;
+
+        const scrollAmount =
+            Math.min(navRef.current.clientWidth * 0.7, 500) * direction;
+
+        navRef.current.scrollBy({
+            left: scrollAmount,
+            behavior: "smooth",
         });
     };
 
-    const MegaMenu = ({ category }) => (
-        <div className="pointer-events-none absolute left-1/2 top-full z-50 w-7xl mx-auto -translate-x-1/2 border-y border-gray-200 bg-white opacity-0 shadow-xl transition-all duration-300 ease-in-out group-hover:pointer-events-auto group-hover:opacity-100">
-            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-5 px-6 py-5 sm:grid-cols-2 lg:grid-cols-5">
-                {category.blogs?.map((blog) => (
-                    <Link
-                        key={blog._id}
-                        href={getBlogUrl(blog)}
-                        onClick={closeAllMenus}
-                        className="group/card text-center"
-                    >
-                        <div className="relative mb-3 h-36 w-full overflow-hidden bg-gray-100">
-                            {blog.mainImage && (
-                                <Image
-                                    src={urlFor(blog.mainImage).width(400).height(260).url()}
-                                    alt={blog.title}
-                                    fill
-                                    sizes="20vw"
-                                    className="object-cover transition-transform duration-500 group-hover/card:scale-105"
-                                />
-                            )}
+    const handleCategoryClick = (event, category) => {
+        if (window.innerWidth >= 1024) return;
 
-                            <span className="absolute left-2 top-2 bg-blue-600 px-2 py-1 text-[10px] font-semibold text-white">
-                                {category.title}
-                            </span>
-                        </div>
+        if (
+            category.blogs?.length > 0 &&
+            activeCategory?._id !== category._id
+        ) {
+            event.preventDefault();
+            setActiveCategory(category);
+        } else {
+            setActiveCategory(null);
+        }
+    };
 
-                        <h3 className="line-clamp-2 px-1 text-sm font-bold leading-snug text-gray-800 transition-colors group-hover/card:text-blue-600">
-                            {blog.title}
-                        </h3>
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setSearchOpen(false);
+                setActiveCategory(null);
+            }
+        };
 
-                        <p className="mt-2 text-xs text-gray-400">
-                            {formatDate(blog.publishedAt)}
-                        </p>
-                    </Link>
-                ))}
-            </div>
-        </div>
-    );
+        window.addEventListener("keydown", handleKeyDown);
 
-    const DesktopNavItem = ({ category }) => (
-        <div className="group static py-4">
-            <div className="absolute left-0 top-full h-6 w-full" />
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);
 
-            <Link
-                href={getCategoryUrl(category)}
-                className="flex items-center gap-1 text-sm font-bold uppercase tracking-wide text-gray-900 transition-colors hover:text-blue-600"
-            >
-                {category.title}
-                <ChevronDown
-                    size={15}
-                    className="transition-transform duration-300 group-hover:rotate-180"
-                />
-            </Link>
+    const handleSearchSubmit = (event) => {
+        event.preventDefault();
 
-            {category.blogs?.length > 0 && <MegaMenu category={category} />}
-        </div>
-    );
+        const query = searchValue.trim();
+
+        if (!query) return;
+
+        setSearchOpen(false);
+        setActiveCategory(null);
+
+        router.push(`/search?q=${encodeURIComponent(query)}`);
+    };
 
     return (
-        <header className="w-full">
-            <div
-                className={`fixed left-0 top-0 z-50 w-full border-b transition-all duration-500 ease-in-out ${sticky
-                        ? "border-white/30 bg-white/70 shadow-md backdrop-blur-xl"
-                        : "border-gray-200 bg-white"
-                    }`}
-            >
+        <header className="sticky top-0 z-50 w-full">
+            <div className="w-full bg-[#181818] text-white shadow-lg">
+                {/* Top logo and date section */}
                 <div
-                    className={`relative mx-auto flex items-center justify-between px-4 transition-all duration-500 ease-in-out sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-3 lg:px-8 ${sticky ? "py-2" : "py-4 lg:py-4"
+                    className={`overflow-hidden transition-all duration-500 ease-in-out ${collapsed
+                            ? "max-h-0 -translate-y-6 border-b-0 opacity-0"
+                            : "max-h-24 translate-y-0 border-b border-white/15 opacity-100"
                         }`}
                 >
-                    <nav className="hidden items-center justify-start gap-8 lg:flex">
-                        {leftItems.map((category) => (
-                            <DesktopNavItem key={category._id} category={category} />
-                        ))}
-                    </nav>
+                    <div className="relative mx-auto flex h-16 max-w-375 items-center justify-between px-4 sm:h-16 sm:px-6 lg:px-8">
+                        {/* Date */}
+                        <div className="min-w-0 flex-1 pr-3 lg:block hidden">
+                            <p className="truncate text-[10px] font-semibold sm:text-xs lg:text-sm">
+                                {currentDate.islamic && (
+                                    <>
+                                        {currentDate.islamic}
+                                        <span className="mx-2 text-white/50">
+                                            |
+                                        </span>
+                                    </>
+                                )}
 
-                    <div className="flex items-center lg:justify-center">
-                        <Link href="/" onClick={closeAllMenus} className="inline-flex">
+                                {currentDate.gregorian}
+                            </p>
+                        </div>
+
+                        {/* Center logo */}
+                        <Link
+                            href="/"
+                            onClick={() => setActiveCategory(null)}
+                            className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+                            aria-label="Go to homepage"
+                        >
                             <Image
                                 src="/assets/logo.png"
-                                alt="Logo"
-                                width={200}
-                                height={50}
+                                alt="Website logo"
+                                width={210}
+                                height={58}
                                 priority
-                                className={`w-auto object-contain transition-all duration-500 ease-in-out ${sticky ? "h-8 sm:h-9 lg:h-10" : "h-9 sm:h-10 lg:h-12"
-                                    }`}
+                                className="h-9 w-auto max-w-36 object-contain brightness-0 invert sm:h-11 sm:max-w-47"
                             />
                         </Link>
+
+                        {/* Right actions */}
+                        <div className="flex flex-1 items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSearchOpen((previous) => !previous);
+                                    setActiveCategory(null);
+                                }}
+                                aria-label={searchOpen ? "Close search" : "Open search"}
+                                aria-expanded={searchOpen}
+                                className="rounded-full p-2 transition-colors hover:bg-white/10"
+                            >
+                                {searchOpen ? <X size={20} /> : <Search size={20} />}
+                            </button>
+                        </div>
                     </div>
+                </div>
 
-                    <nav className="hidden items-center justify-end gap-8 lg:flex">
-                        {rightItems.map((category) => (
-                            <DesktopNavItem key={category._id} category={category} />
-                        ))}
-                    </nav>
+                {/* Sticky category bar */}
+                <div className="relative border-b border-white/15 bg-[#181818]">
+                    <div className="mx-auto flex max-w-[1600px] items-stretch">
+                        {/* Left scroll button */}
+                        <button
+                            type="button"
+                            onClick={() => scrollCategories(-1)}
+                            className="hidden w-10 shrink-0 items-center justify-center border-r border-white/15 bg-[#181818] transition-colors hover:bg-white/10 md:flex"
+                            aria-label="Scroll categories left"
+                        >
+                            <ChevronLeft size={19} />
+                        </button>
 
-                    <button
-                        onClick={() => setOpen(true)}
-                        className="justify-self-end rounded-md p-2 text-gray-900 hover:bg-gray-100 lg:hidden"
-                        aria-label="Open menu"
-                    >
-                        <Menu size={28} />
-                    </button>
+                        <nav
+                            ref={navRef}
+                            className="category-scrollbar flex flex-1 snap-x snap-mandatory items-stretch overflow-x-auto overscroll-x-contain scroll-smooth"
+                            aria-label="Main categories"
+                        >
+                            <Link
+                                href="/"
+                                onClick={() => {
+                                    setActiveCategory(null);
+                                    setSearchOpen(false);
+                                }}
+                                className="flex h-16 min-w-75 shrink-0 snap-start items-center justify-center gap-2 border-r border-white/15 px-4 text-xs font-semibold transition-colors hover:bg-white/10 sm:min-w-27 sm:text-sm"
+                            >
+                                <Home size={18} />
+                                <span>Home</span>
+                            </Link>
+                            {navItems.map((category) => {
+                                const isActive =
+                                    activeCategory?._id === category._id;
+
+                                return (
+                                    <div
+                                        key={category._id}
+                                        data-header-category
+                                        className="group relative shrink-0 snap-start"
+                                        onMouseEnter={() => {
+                                            if (
+                                                window.innerWidth >= 1024 &&
+                                                category.blogs?.length > 0
+                                            ) {
+                                                setActiveCategory(category);
+                                            }
+                                        }}
+                                    >
+                                        <Link
+                                            href={getCategoryUrl(category)}
+                                            onClick={(event) =>
+                                                handleCategoryClick(
+                                                    event,
+                                                    category
+                                                )
+                                            }
+                                            className={`flex h-16 min-w-26 items-center justify-center gap-1.5 border-r border-white/15 px-4 text-center text-xs font-semibold transition-colors sm:min-w-30 sm:px-5 sm:text-sm ${isActive
+                                                    ? "bg-white/15"
+                                                    : "hover:bg-white/10"
+                                                }`}
+                                        >
+                                            <span className="whitespace-nowrap">
+                                                {category.title}
+                                            </span>
+
+                                            {category.blogs?.length > 0 && (
+                                                <ChevronDown
+                                                    size={14}
+                                                    className={`shrink-0 transition-transform duration-300 ${isActive
+                                                            ? "rotate-180"
+                                                            : ""
+                                                        }`}
+                                                />
+                                            )}
+                                        </Link>
+                                    </div>
+                                );
+                            })}
+                        </nav>
+
+                        {/* Right scroll button */}
+                        <button
+                            type="button"
+                            onClick={() => scrollCategories(1)}
+                            className="hidden w-10 shrink-0 items-center justify-center border-l border-white/15 bg-[#181818] transition-colors hover:bg-white/10 md:flex"
+                            aria-label="Scroll categories right"
+                        >
+                            <ChevronRight size={19} />
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    className={`absolute left-0 top-full z-50 w-full overflow-hidden bg-white text-gray-900 shadow-2xl transition-all duration-300 ease-in-out ${searchOpen
+                            ? "visible max-h-60 translate-y-0 border-b border-gray-200 opacity-100"
+                            : "invisible max-h-0 -translate-y-3 border-b-0 opacity-0"
+                        }`}
+                >
+                    <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
+                        <form
+                            onSubmit={handleSearchSubmit}
+                            className="flex items-center overflow-hidden rounded-xl border border-gray-300 bg-gray-50 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100"
+                        >
+                            <Search
+                                size={21}
+                                className="ml-4 shrink-0 text-gray-400"
+                            />
+
+                            <input
+                                type="search"
+                                value={searchValue}
+                                onChange={(event) =>
+                                    setSearchValue(event.target.value)
+                                }
+                                placeholder="Search articles..."
+                                autoFocus={searchOpen}
+                                className="min-w-0 flex-1 bg-transparent px-4 py-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 sm:text-base"
+                            />
+
+                            {searchValue && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchValue("")}
+                                    className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
+                                    aria-label="Clear search"
+                                >
+                                    <X size={18} />
+                                </button>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={!searchValue.trim()}
+                                className="m-1.5 shrink-0 rounded-lg bg-[#181818] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#193bb7] disabled:cursor-not-allowed disabled:opacity-50 sm:px-6"
+                            >
+                                Search
+                            </button>
+                        </form>
+
+                        <p className="mt-2 text-xs text-gray-400">
+                            Search by article title, category or keyword.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Mega menu */}
+                <div
+                    className={`absolute left-0 top-full w-full overflow-hidden bg-white text-gray-900 shadow-2xl transition-all duration-300 ease-in-out ${activeCategory?.blogs?.length > 0 && !searchOpen
+                            ? "visible max-h-[650px] translate-y-0 border-b border-gray-200 opacity-100"
+                            : "invisible max-h-0 -translate-y-3 border-b-0 opacity-0"
+                        }`}
+                    onMouseLeave={() => {
+                        if (window.innerWidth >= 1024) {
+                            setActiveCategory(null);
+                        }
+                    }}
+                >
+                    {activeCategory && (
+                        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+                            <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    {activeCategory.title}
+                                </h2>
+
+                                <Link
+                                    href={getCategoryUrl(activeCategory)}
+                                    onClick={() =>
+                                        setActiveCategory(null)
+                                    }
+                                    className="text-sm font-semibold text-blue-600 hover:text-blue-800"
+                                >
+                                    View all
+                                </Link>
+                            </div>
+
+                            <div className="grid max-h-107 grid-cols-1 gap-4 overflow-y-auto sm:grid-cols-2 lg:grid-cols-5">
+                                {activeCategory.blogs?.map((blog) => (
+                                    <Link
+                                        key={blog._id}
+                                        href={getBlogUrl(blog)}
+                                        onClick={() =>
+                                            setActiveCategory(null)
+                                        }
+                                        className="group/card overflow-hidden border border-gray-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                                    >
+                                        <div className="relative h-32 w-full overflow-hidden bg-gray-100">
+                                            {blog.mainImage ? (
+                                                <Image
+                                                    src={urlFor(
+                                                        blog.mainImage
+                                                    )
+                                                        .width(500)
+                                                        .height(320)
+                                                        .url()}
+                                                    alt={
+                                                        blog.title ||
+                                                        "Post image"
+                                                    }
+                                                    fill
+                                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
+                                                    className="object-cover transition-transform duration-500 group-hover/card:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full items-center justify-center bg-gray-100 text-xs text-gray-400">
+                                                    No image
+                                                </div>
+                                            )}
+
+                                            <span className="absolute left-2 top-2 bg-[#181818] px-2 py-1 text-[10px] font-bold text-white">
+                                                {activeCategory.title}
+                                            </span>
+                                        </div>
+
+                                        <div className="p-3">
+                                            <h3 className="line-clamp-2 text-sm font-bold leading-5 text-gray-900 transition-colors group-hover/card:text-blue-600">
+                                                {blog.title}
+                                            </h3>
+
+                                            {blog.publishedAt && (
+                                                <p className="mt-2 text-xs text-gray-400">
+                                                    {formatPostDate(
+                                                        blog.publishedAt
+                                                    )}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            <div className="h-18 sm:h-20 lg:h-26" />
+            <style jsx global>{`
+                .category-scrollbar {
+                    scrollbar-width: none;
+                    -ms-overflow-style: none;
+                }
 
-            {open && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/45 lg:hidden"
-                    onClick={closeAllMenus}
-                />
-            )}
-
-            <aside
-                className={`fixed right-0 top-0 z-50 h-full w-[85%] max-w-sm bg-white shadow-2xl transition-transform duration-300 lg:hidden ${open ? "translate-x-0" : "translate-x-full"
-                    }`}
-            >
-                <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-                    <Link href="/" onClick={closeAllMenus}>
-                        <Image
-                            src="/assets/logo.png"
-                            alt="Logo"
-                            width={180}
-                            height={60}
-                            className="h-9 w-auto object-contain"
-                        />
-                    </Link>
-
-                    <button
-                        onClick={closeAllMenus}
-                        className="rounded-md p-2 hover:bg-gray-100"
-                        aria-label="Close menu"
-                    >
-                        <X size={24} />
-                    </button>
-                </div>
-
-                <nav className="h-[calc(100%-69px)] overflow-y-auto px-5 py-4">
-                    {navItems.map((category) => (
-                        <Link
-                            key={category._id}
-                            href={getCategoryUrl(category)}
-                            onClick={closeAllMenus}
-                            className="block border-b border-gray-200 py-4 text-base font-semibold text-gray-900 transition-colors hover:text-blue-600"
-                        >
-                            {category.title}
-                        </Link>
-                    ))}
-                </nav>
-
-            </aside>
+                .category-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
         </header>
     );
 }

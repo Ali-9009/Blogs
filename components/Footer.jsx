@@ -1,7 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { client } from "@/sanity/lib/client";
-import { urlFor } from "@/sanity/lib/image";
 import {
     FaFacebookF,
     FaInstagram,
@@ -10,43 +8,21 @@ import {
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { MdEmail } from "react-icons/md";
-import { IoIosArrowForward } from "react-icons/io";
+import { ArrowRight } from "lucide-react";
+import Newsletter from "./Newsletter";
 
-const FOOTER_QUERY = `{
-  "editorPosts": *[_type == "post"] | order(_createdAt desc)[0...3] {
-    _id,
-    title,
-    slug,
-    mainImage,
-    publishedAt,
-    categories[]->{
-      title,
-      slug
-    }
-  },
-  "categories": *[_type == "category"]{
-    _id,
-    title,
-    slug,
-    "count": count(*[_type == "post" && references(^._id)])
-  }[count > 0]
-}`;
+const links = [
+    { name: "Privacy Policy", path: "/privacy" },
+    { name: "Term & Conditions", path: "/term" },
+];
+
+const links2 = [
+    { name: "Dev", path: "#" },
+    { name: "Tech", path: "#" },
+];
 
 export default async function Footer() {
-    const { editorPosts, categories } = await client.fetch(
-        FOOTER_QUERY,
-        {},
-        { cache: "no-store" }
-    );
 
-    const getPostHref = (post) => {
-        const categorySlug = post.categories?.[0]?.slug?.current;
-        const postSlug = post.slug?.current;
-
-        if (!categorySlug || !postSlug) return "#";
-
-        return `/${categorySlug}/${postSlug}`;
-    };
 
     return (
         <footer className="bg-[#111] text-white">
@@ -55,90 +31,66 @@ export default async function Footer() {
                     <div>
                         <FooterTitle title="About Us" />
 
-                        <div className="relative mb-6 h-50 w-full overflow-hidden">
+                        <div className="relative mb-6">
                             <Image
-                                src="/assets/blog-1.webp"
-                                alt="About us"
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 768px) 100vw, 33vw"
+                                src="/assets/logo.png"
+                                alt="Website logo"
+                                width={210}
+                                height={58}
+                                priority
+                                className="h-9 w-auto max-w-36 object-contain brightness-0 invert sm:h-11 sm:max-w-47"
                             />
                         </div>
 
                         <p className="text-sm font-medium leading-7 text-white">
-                            Soledad is one of the best WordPress themes for multipurpose,
-                            include: news, magazine, blog, corporate, creative, eCommerce...etc
-                            It helps you build any professional website in a very short time.
+                            Soledad is one of the best WordPress themes for multipurpose.
                         </p>
+
+                        <div>
+                            <Newsletter />
+                        </div>
+
                     </div>
 
                     <div>
-                        <FooterTitle title="Editor Picks" />
+                        <FooterTitle title="Policies" />
 
-                        <div>
-                            {editorPosts.map((post) => (
-                                <div
-                                    key={post._id}
-                                    className="flex gap-5 border-b border-[#2a2a2a] py-5 first:pt-0"
-                                >
+                        <ul className="mt-5 space-y-3">
+                            {links.map((item) => (
+                                <li key={item.name}>
                                     <Link
-                                        href={getPostHref(post)}
-                                        className="relative h-20 w-30 shrink-0 overflow-hidden"
+                                        href={item.path}
+                                        className="group inline-flex items-center gap-2 text-sm text-gray-200 hover:text-white transition"
                                     >
-                                        {post.mainImage && (
-                                            <Image
-                                                src={urlFor(post.mainImage).width(180).height(120).url()}
-                                                alt={post.title}
-                                                fill
-                                                className="object-cover"
-                                                sizes="118px"
-                                            />
-                                        )}
+                                        <ArrowRight
+                                            size={14}
+                                            className="opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all"
+                                        />
+
+                                        {item.name}
                                     </Link>
-
-                                    <div>
-                                        <Link href={getPostHref(post)}>
-                                            <h4 className="max-h-10 overflow-hidden text-sm font-bold leading-5 hover:text-blue-400">
-                                                {post.title}
-                                            </h4>
-                                        </Link>
-
-                                        <p className="mt-2 text-xs text-gray-400">
-                                            {post.publishedAt
-                                                ? new Date(post.publishedAt).toLocaleDateString(
-                                                    "en-US",
-                                                    {
-                                                        month: "long",
-                                                        day: "numeric",
-                                                        year: "numeric",
-                                                    }
-                                                )
-                                                : ""}
-                                        </p>
-                                    </div>
-                                </div>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                     </div>
 
                     <div>
                         <FooterTitle title="Categories" />
 
-                        <ul>
-                            {categories.map((category) => (
-                                <li
-                                    key={category._id}
-                                    className="flex items-center justify-between border-b border-[#2a2a2a] py-3 text-sm"
-                                >
+                        <ul className="mt-5 space-y-3">
+                            {links2.map((item) => (
+                                <li key={item.name}>
                                     <Link
-                                        href={`/${category.slug.current}`}
-                                        className="flex items-center gap-2 font-medium hover:text-blue-400"
+                                        href={item.path}
+                                        className="group inline-flex items-center gap-2 text-sm text-gray-200 hover:text-white transition"
                                     >
-                                        <IoIosArrowForward className="text-xs" />
-                                        {category.title}
-                                    </Link>
+                                        <ArrowRight
+                                            size={14}
+                                            className="opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all"
+                                        />
 
-                                    <span className="text-gray-400">({category.count})</span>
+                                        {item.name}
+                                    </Link>
                                 </li>
                             ))}
                         </ul>
