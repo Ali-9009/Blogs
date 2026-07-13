@@ -100,7 +100,7 @@ export default async function Footer() {
 
             <div className="bg-[#111]">
                 <div className="mx-auto max-w-7xl px-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 items-start justify-start gap-4 border-b border-[#262626] py-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 border-b border-[#262626] py-8">
                         <SocialLink icon={<FaFacebookF />} label="Facebook" bg="bg-blue-700" />
                         <SocialLink icon={<FaXTwitter />} label="Twitter" bg="bg-sky-500" />
                         <SocialLink icon={<FaInstagram />} label="Instagram" bg="bg-pink-600" />
@@ -127,13 +127,14 @@ function SocialLink({ icon, label, bg }) {
     return (
         <Link
             href="#"
-            className="flex items-center justify-center gap-3 rounded-lg py-3 text-sm font-bold uppercase text-gray-400 transition hover:bg-[#1a1a1a] hover:text-white"
+            className="flex w-full items-center justify-start gap-3 text-sm font-bold uppercase text-gray-400 transition hover:text-white"
         >
             <span
-                className={`${bg} flex h-10 w-10 items-center justify-center rounded-md text-base text-white shrink-0`}
+                className={`${bg} flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-base text-white`}
             >
                 {icon}
             </span>
+
             <span>{label}</span>
         </Link>
     );
